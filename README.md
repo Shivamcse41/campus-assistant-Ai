@@ -101,7 +101,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 
-loader = PyPDFLoader("data/The_GALE_ENCYCLOPEDIA_of_MEDICINE_SECOND.pdf")
+loader = PyPDFLoader("data/syllabus.pdf")
 docs = loader.load()
 splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
 chunks = splitter.split_documents(docs)
@@ -116,7 +116,7 @@ source .venv/bin/activate
 export HF_TOKEN=...  # if not in .env
 python connect_memory_with_llm.py
 ```
-Enter a query at the prompt: `How is hypertension managed?`
+Enter a query at the prompt: `What is the syllabus for CS?`
 
 ## 🖥 Running the Streamlit App
 ```zsh
@@ -127,7 +127,7 @@ streamlit run campconnect.py
 Open the URL shown (default: http://localhost:8501) and start chatting.
 
 ## 🔄 Switching Embedding Modes
-`medibot.py` includes:
+`chatbot.py` includes:
 ```python
 get_vectorstore()              # local model download
 get_vectorstore_hf_api(token)  # uses HuggingFace API
@@ -149,7 +149,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 emb = HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')
 db = FAISS.load_local('vectorstore/db_faiss', emb, allow_dangerous_deserialization=True)
-print('Index loaded. k=2 sample:\n', db.similarity_search('What is diabetes?', k=2))
+print('Index loaded. k=2 sample:\n', db.similarity_search('What is the syllabus?', k=2))
 PY
 ```
 
@@ -180,13 +180,11 @@ for i, d in enumerate(source_documents, 1):
 - Persist chat history with sources
 - Add evaluation harness (e.g. RAGAS) for answer faithfulness
 
-## ⚖️ Disclaimer
-This tool is for educational and reference purposes only. It does **not** provide medical advice, diagnosis, or treatment recommendations. Always consult a licensed healthcare professional for medical decisions.
 
 ## ✅ Minimal Usage Recap
 ```zsh
 python create_memory_for_llm.py            # build index (one time)
-streamlit run medibot.py                   # chat UI (needs GROQ_API_KEY)
+streamlit run campconnect.py               # chat UI (needs GROQ_API_KEY)
 python connect_memory_with_llm.py          # CLI (needs HF_TOKEN)
 ```
 
