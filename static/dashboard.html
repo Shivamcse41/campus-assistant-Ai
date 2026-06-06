@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CampConnect — Dashboard</title>
+  <meta name="description" content="CampConnect SaaS Admin Dashboard — manage documents and test your AI chatbot." />
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+
+  <div id="toast-container"></div>
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div style="display:flex;align-items:center;gap:0.6rem;">
+        <div style="width:36px;height:36px;background:linear-gradient(135deg,#6366f1,#06b6d4);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">🤖</div>
+        <div>
+          <div class="logo-text">CampConnect</div>
+          <div class="logo-sub">SaaS Platform</div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="section-title" style="font-size:0.68rem;padding:0 0.4rem;margin-bottom:0.5rem;">Navigation</div>
+
+      <a class="nav-item active" id="nav-overview" onclick="showSection('overview')" href="#">
+        <span class="nav-icon">📊</span> Overview
+      </a>
+      <a class="nav-item" id="nav-documents" onclick="showSection('documents')" href="#">
+        <span class="nav-icon">📄</span> Documents
+      </a>
+      <a class="nav-item" id="nav-chat" onclick="showSection('chat')" href="#">
+        <span class="nav-icon">💬</span> Test Chatbot
+      </a>
+      <a class="nav-item" id="nav-embed" onclick="showSection('embed')" href="#">
+        <span class="nav-icon">🔗</span> Embed Widget
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="card" style="padding:0.9rem;margin-bottom:0.75rem;">
+        <div class="text-xs text-muted mb-1" style="margin-bottom:0.25rem;">Logged in as</div>
+        <div class="font-bold text-sm truncate" id="sidebar-business">—</div>
+        <div class="text-xs text-muted truncate" id="sidebar-client-id" style="margin-top:0.1rem;font-family:'JetBrains Mono',monospace;"></div>
+      </div>
+      <button class="btn btn-ghost w-full" id="logout-btn" onclick="logout()" style="justify-content:center;">
+        🚪 Sign Out
+      </button>
+    </div>
+  </aside>
+
+  <!-- ═══ MAIN CONTENT ═══ -->
+  <main class="main-content">
+
+    <!-- ── OVERVIEW SECTION ── -->
+    <section id="section-overview">
+      <div class="page-header">
+        <h1 class="page-title">Dashboard Overview</h1>
+        <p class="page-subtitle">Your AI chatbot platform at a glance</p>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="card stat-card">
+          <div class="stat-icon indigo">📄</div>
+          <div>
+            <div class="stat-value" id="stat-docs">—</div>
+            <div class="stat-label">Documents Uploaded</div>
+          </div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-icon cyan">💬</div>
+          <div>
+            <div class="stat-value" id="stat-queries">—</div>
+            <div class="stat-label">Total Queries Answered</div>
+          </div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-icon emerald">✅</div>
+          <div>
+            <div class="stat-value" id="stat-status">—</div>
+            <div class="stat-label">Chatbot Status</div>
+          </div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-icon amber">🏢</div>
+          <div>
+            <div class="stat-value" id="stat-business-short">—</div>
+            <div class="stat-label">Business Account</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="content-grid">
+        <div class="card">
+          <div class="section-title">⚡ Quick Upload</div>
+          <div class="upload-zone" id="quick-upload-zone">
+            <input type="file" accept=".pdf" id="quick-file-input" onchange="quickUpload(this)" />
+            <div class="upload-icon">📤</div>
+            <div class="upload-text"><strong>Click or drag</strong> a PDF to upload</div>
+            <div class="text-xs text-muted mt-1">Your document will be instantly embedded</div>
+          </div>
+          <div class="progress-bar hidden" id="quick-progress-bar">
+            <div class="progress-fill" id="quick-progress-fill"></div>
+          </div>
+          <div id="quick-upload-status" class="text-sm text-muted mt-3"></div>
+        </div>
+
+        <div class="card">
+          <div class="section-title">🧪 Quick Test</div>
+          <p class="text-sm text-secondary" style="margin-bottom:1rem;">Ask a quick question to test your chatbot with the uploaded documents.</p>
+          <div class="form-group">
+            <input class="input" type="text" id="quick-question" placeholder="What topics are covered in the documents?" />
+          </div>
+          <button class="btn btn-primary" id="quick-ask-btn" onclick="quickAsk()" style="width:100%;justify-content:center;">
+            🔍 Ask Question
+          </button>
+          <div id="quick-answer" class="card" style="margin-top:1rem;display:none;background:rgba(99,102,241,0.06);border-color:rgba(99,102,241,0.2);">
+            <div class="text-sm" id="quick-answer-text"></div>
+            <div class="text-xs text-muted mt-1" id="quick-answer-source"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── DOCUMENTS SECTION ── -->
+    <section id="section-documents" class="hidden">
+      <div class="page-header flex justify-between items-center">
+        <div>
+          <h1 class="page-title">Documents</h1>
+          <p class="page-subtitle">Manage your uploaded PDF knowledge base</p>
+        </div>
+        <button class="btn btn-primary" onclick="document.getElementById('doc-file-input').click()">
+          ➕ Upload PDF
+        </button>
+        <input type="file" accept=".pdf" id="doc-file-input" class="hidden" onchange="uploadDocument(this)" />
+      </div>
+
+      <div class="card" style="margin-bottom:1.5rem;">
+        <div class="section-title">📤 Upload New Document</div>
+        <div class="upload-zone" id="doc-upload-zone">
+          <input type="file" accept=".pdf" id="doc-upload-input" onchange="uploadDocument(this)" />
+          <div class="upload-icon">📑</div>
+          <div class="upload-text"><strong>Click or drag & drop</strong> PDF files here</div>
+          <div class="text-xs text-muted mt-1">Supports single and multiple uploads</div>
+        </div>
+        <div class="progress-bar hidden" id="doc-progress-bar" style="margin-top:0.75rem;">
+          <div class="progress-fill" id="doc-progress-fill"></div>
+        </div>
+        <div id="doc-upload-status" class="text-sm mt-3"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">📚 Uploaded Documents</div>
+        <div id="doc-list">
+          <div class="text-sm text-muted" style="text-align:center;padding:2rem;">Loading documents…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── CHAT SECTION ── -->
+    <section id="section-chat" class="hidden">
+      <div class="page-header">
+        <h1 class="page-title">Test Your Chatbot</h1>
+        <p class="page-subtitle">Chat with your AI in real-time using your uploaded documents</p>
+      </div>
+
+      <div class="card" style="max-width:760px;">
+        <div class="flex justify-between items-center" style="margin-bottom:1rem;">
+          <div class="section-title" style="margin:0;">💬 Live Chat</div>
+          <button class="btn btn-ghost text-xs" onclick="clearChat()" style="padding:0.4rem 0.8rem;">🗑 Clear</button>
+        </div>
+
+        <div class="chat-container">
+          <div class="chat-messages" id="chat-messages">
+            <div class="chat-bubble bot">
+              👋 Hi! I'm your AI assistant. Upload some documents and ask me anything about them!
+            </div>
+          </div>
+          <div class="chat-input-row">
+            <input class="input" type="text" id="chat-input" placeholder="Ask a question about your documents…"
+              onkeydown="if(event.key==='Enter') sendMessage()" />
+            <button class="btn btn-primary" id="send-btn" onclick="sendMessage()" style="padding:0.65rem 1.2rem;flex-shrink:0;">
+              Send ➤
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── EMBED SECTION ── -->
+    <section id="section-embed" class="hidden">
+      <div class="page-header">
+        <h1 class="page-title">Embed Widget</h1>
+        <p class="page-subtitle">Copy this snippet to add the chatbot to any website</p>
+      </div>
+
+      <div class="content-grid">
+        <div class="card">
+          <div class="section-title">📋 Your Embed Code</div>
+          <p class="text-sm text-secondary" style="margin-bottom:1rem;">
+            Paste this single <code style="color:var(--primary-light);background:rgba(99,102,241,0.1);padding:1px 5px;border-radius:4px;">&lt;script&gt;</code> tag anywhere in your website's HTML — before the closing <code style="color:var(--primary-light);background:rgba(99,102,241,0.1);padding:1px 5px;border-radius:4px;">&lt;/body&gt;</code> tag.
+          </p>
+          <div id="embed-code-box" style="background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:var(--radius-sm);padding:1rem;font-family:'JetBrains Mono',monospace;font-size:0.8rem;color:#a5f3fc;word-break:break-all;white-space:pre-wrap;line-height:1.7;"></div>
+          <button class="btn btn-primary mt-4" onclick="copyEmbedCode()" style="width:100%;justify-content:center;">
+            📋 Copy to Clipboard
+          </button>
+        </div>
+
+        <div class="card">
+          <div class="section-title">🔍 Widget Preview</div>
+          <p class="text-sm text-secondary" style="margin-bottom:1rem;">This is how the floating chat button will appear on your website:</p>
+          <div style="background:rgba(255,255,255,0.03);border:1px solid var(--glass-border);border-radius:var(--radius-md);height:280px;position:relative;overflow:hidden;">
+            <div style="position:absolute;bottom:1rem;right:1rem;">
+              <div style="width:56px;height:56px;background:linear-gradient(135deg,#6366f1,#06b6d4);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;box-shadow:0 8px 25px rgba(99,102,241,0.5);cursor:pointer;animation:pulse 2s infinite;">💬</div>
+            </div>
+            <div style="position:absolute;bottom:5rem;right:1rem;width:260px;background:rgba(13,20,36,0.95);border:1px solid var(--glass-border);border-radius:var(--radius-md);padding:1rem;">
+              <div style="font-size:0.8rem;font-weight:700;margin-bottom:0.5rem;color:var(--primary-light);">🤖 AI Assistant</div>
+              <div style="font-size:0.75rem;color:var(--text-secondary);">Ask me anything about our products and services!</div>
+            </div>
+          </div>
+          <p class="text-xs text-muted mt-3">
+            The widget is fully responsive and works on mobile, tablet, and desktop.
+          </p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <style>
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 8px 25px rgba(99,102,241,0.5); }
+      50%      { box-shadow: 0 8px 35px rgba(99,102,241,0.8); }
+    }
+  </style>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

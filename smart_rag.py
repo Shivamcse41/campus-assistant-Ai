@@ -86,7 +86,7 @@ def _phase1_local_search(query: str) -> tuple[str, float]:
 
         best_score = max(score for _, score in results)
         combined_text = "\n\n".join(doc.page_content for doc, _ in results)
-        print(f"[Smart RAG] Phase 1 — best relevance score: {best_score:.2f}")
+        print(f"[Smart RAG] Phase 1 - best relevance score: {best_score:.2f}")
         return combined_text, best_score
     except Exception as e:
         print(f"[Smart RAG] Phase 1 error: {e}")
@@ -98,7 +98,7 @@ def _phase2_web_crawl(query: str) -> dict:
     """Delegate to college_crawler and return its result dict."""
     from college_crawler import fetch_context_for_query
     result = fetch_context_for_query(query)
-    print(f"[Smart RAG] Phase 2 — crawled: {result['url']} | status: {result['status']}")
+    print(f"[Smart RAG] Phase 2 - crawled: {result['url']} | status: {result['status']}")
     return result
 
 

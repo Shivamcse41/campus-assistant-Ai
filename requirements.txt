@@ -1,7 +1,21 @@
-fastapi
-uvicorn
-requests
-python-dotenv
+# ── Core Web Framework ───────────────────────────────────────────────────────
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+python-multipart==0.0.12        # Required for FastAPI file uploads
+"pydantic[email]"               # EmailStr validation for auth schemas
+aiofiles                        # Required for serving static files
+
+
+# ── Database ──────────────────────────────────────────────────────────────────
+sqlalchemy==2.0.36
+pymysql==1.1.1                  # MySQL driver for SQLAlchemy
+cryptography==43.0.3            # Required by pymysql for auth
+
+# ── Authentication (Task 2 — installed now) ───────────────────────────────────
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# ── LangChain RAG Stack ───────────────────────────────────────────────────────
 langchain==0.3.26
 langchain-community==0.3.27
 langchain-core==0.3.68
@@ -9,9 +23,14 @@ langchain-groq==0.3.5
 langchain-huggingface==0.3.0
 langchain-text-splitters==0.3.8
 langchainhub
+
+# ── Embeddings & Vector Store ─────────────────────────────────────────────────
 sentence-transformers
 faiss-cpu
-streamlit
+
+# ── Document Loaders ──────────────────────────────────────────────────────────
 pypdf
-pyrebase4
-beautifulsoup4
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+python-dotenv
+requests

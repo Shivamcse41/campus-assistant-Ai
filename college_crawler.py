@@ -91,7 +91,7 @@ def fetch_context_for_query(query: str) -> dict:
     """
     path = _detect_route(query)
     full_url = BASE_URL + path
-    print(f"[Crawler] Routing query to → {full_url}")
+    print(f"[Crawler] Routing query to -> {full_url}")
 
     content = _fetch_page(full_url)
 

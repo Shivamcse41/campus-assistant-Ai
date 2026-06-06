@@ -3,7 +3,6 @@ import requests
 import sqlite3
 
 import streamlit as st
-import firebase_admin
 from smart_rag import smart_query
 
 

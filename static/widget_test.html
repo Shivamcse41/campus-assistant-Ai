@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CampConnect Widget Test Page</title>
+  <style>
+    body {
+      background-color: #f3f4f6;
+      color: #1f2937;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 40px;
+      max-width: 600px;
+      margin: 80px auto;
+      line-height: 1.6;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+      background: white;
+    }
+    h1 {
+      color: #111827;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+    code {
+      background: #f3f4f6;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <h1>⚜️ Host Website</h1>
+  <p>This page simulates an external business website embedding your CampConnect AI chatbot concierge.</p>
+  <p>Look at the bottom right corner of this page — you should see the floating chat launcher button.</p>
+  <p>Clicking the button will open the luxury-styled chatbot widget, allowing visitors to interact with the assistant in real-time.</p>
+  <p>The widget communicates with the public endpoint: <code>/api/query/public/f886b531-0192-4273-9d83-8246a1af71a8</code>.</p>
+
+  <!-- Embed Code -->
+  <script src="/static/widget.js" data-client-id="f886b531-0192-4273-9d83-8246a1af71a8" defer></script>
+</body>
+</html>

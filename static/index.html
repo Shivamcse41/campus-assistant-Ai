@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CampConnect — Login</title>
+  <meta name="description" content="CampConnect SaaS — AI-powered RAG chatbot platform for your business documents." />
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <div id="toast-container"></div>
+
+  <div class="login-page">
+    <div class="card login-card glass">
+
+      <!-- Logo -->
+      <div class="login-logo">
+        <div class="login-logo-icon">🤖</div>
+        <div class="logo-text" style="font-size:1.6rem;">CampConnect</div>
+        <div class="logo-sub" style="margin-top:0.3rem;">AI Chatbot SaaS Platform</div>
+      </div>
+
+      <!-- Tab Switcher -->
+      <div class="tab-switcher" role="tablist">
+        <button class="tab-btn active" id="tab-login" onclick="switchTab('login')" role="tab">Login</button>
+        <button class="tab-btn" id="tab-register" onclick="switchTab('register')" role="tab">Register</button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="login-form" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label class="label" for="login-email">Email Address</label>
+          <input class="input" type="email" id="login-email" placeholder="you@business.com" required />
+        </div>
+        <div class="form-group">
+          <label class="label" for="login-password">Password</label>
+          <input class="input" type="password" id="login-password" placeholder="••••••••" required />
+        </div>
+        <button class="btn btn-primary w-full" type="submit" id="login-btn" style="justify-content:center;padding:0.8rem;">
+          <span id="login-btn-text">Sign In</span>
+          <span class="spinner hidden" id="login-spinner"></span>
+        </button>
+        <p class="text-sm text-muted" style="text-align:center;margin-top:1rem;">
+          Don't have an account? <a href="#" onclick="switchTab('register')" style="color:var(--primary-light);">Register free</a>
+        </p>
+      </form>
+
+      <!-- Register Form -->
+      <form id="register-form" class="hidden" onsubmit="handleRegister(event)">
+        <div class="form-group">
+          <label class="label" for="reg-business">Business Name</label>
+          <input class="input" type="text" id="reg-business" placeholder="Acme Corp" required />
+        </div>
+        <div class="form-group">
+          <label class="label" for="reg-email">Email Address</label>
+          <input class="input" type="email" id="reg-email" placeholder="you@business.com" required />
+        </div>
+        <div class="form-group">
+          <label class="label" for="reg-password">Password</label>
+          <input class="input" type="password" id="reg-password" placeholder="Min 6 characters" minlength="6" required />
+        </div>
+        <button class="btn btn-primary w-full" type="submit" id="reg-btn" style="justify-content:center;padding:0.8rem;">
+          <span id="reg-btn-text">Create Account</span>
+          <span class="spinner hidden" id="reg-spinner"></span>
+        </button>
+        <p class="text-sm text-muted" style="text-align:center;margin-top:1rem;">
+          Already have an account? <a href="#" onclick="switchTab('login')" style="color:var(--primary-light);">Sign in</a>
+        </p>
+      </form>
+
+    </div>
+  </div>
+
+  <script>
+    const API = '';
+
+    // Redirect to dashboard if already logged in
+    if (localStorage.getItem('cc_token')) {
+      window.location.href = '/static/dashboard.html';
+    }
+
+    function switchTab(tab) {
+      const isLogin = tab === 'login';
+      document.getElementById('tab-login').classList.toggle('active', isLogin);
+      document.getElementById('tab-register').classList.toggle('active', !isLogin);
+      document.getElementById('login-form').classList.toggle('hidden', !isLogin);
+      document.getElementById('register-form').classList.toggle('hidden', isLogin);
+    }
+
+    function showToast(msg, type = 'info') {
+      const c = document.getElementById('toast-container');
+      const t = document.createElement('div');
+      t.className = `toast ${type}`;
+      const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+      t.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
+      c.appendChild(t);
+      setTimeout(() => t.remove(), 4000);
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const btn = document.getElementById('login-btn');
+      const spinner = document.getElementById('login-spinner');
+      const text = document.getElementById('login-btn-text');
+      btn.disabled = true; spinner.classList.remove('hidden'); text.textContent = 'Signing in…';
+
+      try {
+        const res = await fetch(`${API}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: document.getElementById('login-email').value,
+            password: document.getElementById('login-password').value,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Login failed');
+
+        localStorage.setItem('cc_token', data.access_token);
+        localStorage.setItem('cc_client_id', data.client_id);
+        localStorage.setItem('cc_business', data.business_name);
+        showToast(`Welcome back, ${data.business_name}!`, 'success');
+        setTimeout(() => window.location.href = '/static/dashboard.html', 800);
+      } catch (err) {
+        showToast(err.message, 'error');
+        btn.disabled = false; spinner.classList.add('hidden'); text.textContent = 'Sign In';
+      }
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+      const btn = document.getElementById('reg-btn');
+      const spinner = document.getElementById('reg-spinner');
+      const text = document.getElementById('reg-btn-text');
+      btn.disabled = true; spinner.classList.remove('hidden'); text.textContent = 'Creating…';
+
+      try {
+        const res = await fetch(`${API}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            business_name: document.getElementById('reg-business').value,
+            email: document.getElementById('reg-email').value,
+            password: document.getElementById('reg-password').value,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Registration failed');
+        showToast('Account created! Please sign in.', 'success');
+        setTimeout(() => switchTab('login'), 1000);
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        btn.disabled = false; spinner.classList.add('hidden'); text.textContent = 'Create Account';
+      }
+    }
+  </script>
+</body>
+</html>
