@@ -34,3 +34,5 @@ pypdf
 # ── Utilities ─────────────────────────────────────────────────────────────────
 python-dotenv
 requests
+slowapi
+
