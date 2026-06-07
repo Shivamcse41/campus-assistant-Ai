@@ -12,8 +12,8 @@ pymysql==1.1.1                  # MySQL driver for SQLAlchemy
 cryptography==43.0.3            # Required by pymysql for auth
 
 # ── Authentication (Task 2 — installed now) ───────────────────────────────────
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0 # Token signing and encryption support
+passlib[bcrypt]==1.7.4           # Password hashing utility with bcrypt support
 
 # ── LangChain RAG Stack ───────────────────────────────────────────────────────
 langchain==0.3.26
