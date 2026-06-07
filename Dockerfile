@@ -29,5 +29,5 @@ COPY . .
 # Expose port (Railway will override this via the PORT environment variable)
 EXPOSE 8000
 
-# Start FastAPI application using uvicorn
+# Start FastAPI application using uvicorn with dynamic port expansion
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
