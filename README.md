@@ -1,4 +1,15 @@
+---
+title: GPA Assistant
+emoji: 🎓
+colorFrom: indigo
+colorTo: purple
+sdk: docker
+app_port: 8000
+pinned: false
+---
+
 # 🎓 CampConnect (RAG-based Campus Assistant)
+
 
 CampConnect is a multi-tenant RAG (Retrieval-Augmented Generation) SaaS application designed for college campuses. It allows college staff members to upload documents (admission forms, fee structures, syllabus, rules, etc.) to build a shared FAISS vector store, enabling students to instantly query college information via an AI-powered chat interface.
 
