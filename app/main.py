@@ -19,9 +19,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.database import engine, Base
-from app.api.routes import router as api_router
+from app.database import engine, Base, SessionLocal
+from app.api.routes import router as api_router, limiter
 from app.auth.router import router as auth_router
+from slowapi.errors import RateLimitExceeded
+from slowapi.extension import _rate_limit_exceeded_handler
 
 # ── Logging setup ─────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -38,6 +40,7 @@ async def lifespan(app: FastAPI):
     """
     Runs on application startup and shutdown.
     - Creates all database tables if they don't exist yet (safe to run repeatedly)
+    - Seeds the fixed COLLEGE_CLIENT_ID if it is set in settings but does not exist in DB
     - Pre-warms the embedding model so the first request isn't slow
     """
     logger.info("═" * 60)
@@ -48,6 +51,32 @@ async def lifespan(app: FastAPI):
     logger.info("Creating database tables if not exist...")
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables ready.")
+
+    # Seed COLLEGE_CLIENT_ID client if configured
+    from app.config import settings
+    from app.models import Client
+    if settings.COLLEGE_CLIENT_ID:
+        db = SessionLocal()
+        try:
+            college_client = db.query(Client).filter(Client.id == settings.COLLEGE_CLIENT_ID).first()
+            if not college_client:
+                logger.info(f"Seeding college client with ID: {settings.COLLEGE_CLIENT_ID}")
+                college_client = Client(
+                    id=settings.COLLEGE_CLIENT_ID,
+                    business_name="Government Polytechnic Aurangabad",
+                    email="admin@gpa.edu",
+                    hashed_password="gpa-college-fixed-account-disabled",
+                )
+                db.add(college_client)
+                db.commit()
+                logger.info("College client seeded successfully.")
+            else:
+                logger.info(f"College client with ID {settings.COLLEGE_CLIENT_ID} already exists.")
+        except Exception as e:
+            logger.error(f"Error seeding college client: {e}")
+            db.rollback()
+        finally:
+            db.close()
 
     # Pre-warm embedding model (loads ~90MB model into memory now,
     # so the first /api/upload request doesn't time out)
@@ -90,6 +119,10 @@ For Task 1 testing, use the `/api/clients/register-demo` endpoint.
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 
 
 # ── CORS Middleware ────────────────────────────────────────────────────────────

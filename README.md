@@ -181,12 +181,42 @@ for i, d in enumerate(source_documents, 1):
 - Add evaluation harness (e.g. RAGAS) for answer faithfulness
 
 
+## 🏫 GPA Assistant (Special College Customization)
+We added custom support for **Government Polytechnic Aurangabad** (GPA) to allow shared document management and a public guest-access student chat portal:
+
+### 1. Shared Staff Indexing
+- Set `COLLEGE_CLIENT_ID` in your `.env` file to the fixed UUID of the college.
+- When configured, all staff members logging into the dashboard will automatically share this single college client ID.
+- Any PDF uploaded by any staff member is embedded into **one shared FAISS index** for the college.
+- Any staff member can view and delete these shared documents from the dashboard.
+
+### 2. Student Chat Portal (`static/student.html`)
+- A beautiful, full-screen dark mode interface designed like Claude.ai.
+- Guest access (no login required) for students to ask questions grounded in the college's shared knowledge base.
+- Shows source document tags (e.g., `Source: fee_structure.pdf`) below answers.
+- Features recommended preset questions at start and session-only history.
+
+### 3. Public Query Endpoint
+- `POST /api/query/public/{client_id}`
+- Allows querying the FAISS index without JWT authentication.
+- Rate-limited to **20 queries per IP per hour** (using `slowapi`) to prevent API abuse.
+- Configuration retrieval endpoint: `GET /api/config/college` allows the frontend to dynamically fetch the configured college client ID.
+
+
 ## ✅ Minimal Usage Recap
 ```zsh
-python create_memory_for_llm.py            # build index (one time)
-streamlit run campconnect.py               # chat UI (needs GROQ_API_KEY)
-python connect_memory_with_llm.py          # CLI (needs HF_TOKEN)
+# 1. Build index locally (CLI demo)
+python create_memory_for_llm.py
+
+# 2. Run the main SaaS FastAPI Server
+python run.py
+
+# 3. Access Pages:
+# - Student Chat Page: http://localhost:8000/static/student.html
+# - Staff Admin Login: http://localhost:8000/static/login.html
+# - Swagger Docs: http://localhost:8000/docs
 ```
 
 ---
 Questions or want enhancements? Open an issue or extend the scripts directly. Enjoy building with RAG! 🧪
+

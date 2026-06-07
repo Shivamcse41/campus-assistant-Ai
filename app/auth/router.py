@@ -134,13 +134,16 @@ def login(
 
     logger.info(f"Login successful: {client.email} ({client.id})")
 
+    client_id_to_use = settings.COLLEGE_CLIENT_ID if settings.COLLEGE_CLIENT_ID else client.id
+
     return LoginResponse(
         access_token=access_token,
         token_type="bearer",
-        client_id=client.id,
+        client_id=client_id_to_use,
         business_name=client.business_name,
         expires_in=int(token_expires.total_seconds()),
     )
+
 
 
 # ── GET /auth/me ──────────────────────────────────────────────────────────────
@@ -161,19 +164,22 @@ def get_me(
     from sqlalchemy import func
     from app.models import Document, QueryLog
 
+    client_id_to_use = settings.COLLEGE_CLIENT_ID if settings.COLLEGE_CLIENT_ID else current_client.id
+
     doc_count = db.query(func.count(Document.id)).filter(
-        Document.client_id == current_client.id
+        Document.client_id == client_id_to_use
     ).scalar() or 0
 
     query_count = db.query(func.count(QueryLog.id)).filter(
-        QueryLog.client_id == current_client.id
+        QueryLog.client_id == client_id_to_use
     ).scalar() or 0
 
     return {
-        "client_id": current_client.id,
+        "client_id": client_id_to_use,
         "business_name": current_client.business_name,
         "email": current_client.email,
         "created_at": current_client.created_at.isoformat(),
         "documents_uploaded": doc_count,
         "total_queries": query_count,
     }
+

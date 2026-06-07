@@ -63,6 +63,10 @@ class Settings:
     CHUNK_SIZE: int = 500
     CHUNK_OVERLAP: int = 50
 
+    # ── College Config ────────────────────────────────────────────────────────
+    COLLEGE_CLIENT_ID: str = os.getenv("COLLEGE_CLIENT_ID", "")
+
+
 
 # Single shared settings instance — import this everywhere
 settings = Settings()

@@ -18,12 +18,13 @@ import logging
 from typing import Any, Dict, List
 
 from fastapi import (
-    APIRouter, Depends, File, HTTPException, Path, UploadFile, status
+    APIRouter, Depends, File, HTTPException, Path, UploadFile, status, Request
 )
 from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import get_db
 from app.models import Client, Document, QueryLog
 from app.core.vectorstore import (
@@ -34,10 +35,14 @@ from app.core.vectorstore import (
 )
 from app.core.rag_pipeline import run_rag_query
 from app.auth.dependencies import get_current_client
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 logger = logging.getLogger(__name__)
 
+limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/api", tags=["API"])
+
 
 
 # ── Pydantic Schemas ──────────────────────────────────────────────────────────
@@ -100,13 +105,13 @@ async def upload_document(
     Returns the number of text chunks created from the PDF.
     """
     # ── Enforce ownership: client can only upload to their own store ──────────
-    if current_client.id != client_id:
+    is_shared_college = settings.COLLEGE_CLIENT_ID and client_id == settings.COLLEGE_CLIENT_ID
+    if current_client.id != client_id and not is_shared_college:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only upload documents to your own client account.",
         )
 
-    client = current_client
 
     # ── Validate file type ────────────────────────────────────────────────────
     if not file.filename or not file.filename.lower().endswith(".pdf"):
@@ -180,13 +185,13 @@ def query_documents(
     - Logs the query + answer in the `query_logs` table.
     """
     # ── Enforce ownership ─────────────────────────────────────────────────────
-    if current_client.id != client_id:
+    is_shared_college = settings.COLLEGE_CLIENT_ID and client_id == settings.COLLEGE_CLIENT_ID
+    if current_client.id != client_id and not is_shared_college:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only query your own client documents.",
         )
 
-    client = current_client
 
     logger.info(f"[{client_id}] Query: {body.question[:80]}")
 
@@ -225,11 +230,14 @@ class PublicQueryResponse(BaseModel):
     summary="Ask a question without JWT authentication (used by embeddable widget)",
     status_code=status.HTTP_200_OK,
 )
+@limiter.limit("20/hour")
 def query_documents_public(
+    request: Request,
     client_id: str = Path(..., description="UUID of the client/tenant"),
     body: QueryRequest = ...,
     db: Session = Depends(get_db),
 ) -> PublicQueryResponse:
+
     """
     Run a RAG query against the client's uploaded documents without authentication.
 
@@ -389,11 +397,13 @@ def list_documents(
     - Requires a valid JWT token.
     - Client can only view their own documents.
     """
-    if current_client.id != client_id:
+    is_shared_college = settings.COLLEGE_CLIENT_ID and client_id == settings.COLLEGE_CLIENT_ID
+    if current_client.id != client_id and not is_shared_college:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only view your own documents.",
         )
+
 
     docs = db.query(Document).filter(Document.client_id == client_id).all()
     return [
@@ -427,11 +437,13 @@ def delete_document(
     - Removes the document record from MySQL.
     - Removes the corresponding embedded chunks from the FAISS vector store.
     """
-    if current_client.id != client_id:
+    is_shared_college = settings.COLLEGE_CLIENT_ID and client_id == settings.COLLEGE_CLIENT_ID
+    if current_client.id != client_id and not is_shared_college:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only delete your own documents.",
         )
+
 
     doc = db.query(Document).filter(
         Document.client_id == client_id,
@@ -459,4 +471,16 @@ def delete_document(
         "deleted_from_faiss": deleted_from_faiss,
         "message": f"Successfully deleted document '{filename}'."
     }
+
+
+# ── GET /api/config/college ───────────────────────────────────────────────────
+
+@router.get(
+    "/config/college",
+    summary="Get public college client ID",
+    status_code=status.HTTP_200_OK,
+)
+def get_college_config():
+    return {"college_client_id": settings.COLLEGE_CLIENT_ID}
+
 
