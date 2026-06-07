@@ -1,222 +1,91 @@
-<div align="center">
-
 # 🎓 CampConnect (RAG-based Campus Assistant)
 
-Context-aware Q&A over a local knowledge base using FAISS vector search + HuggingFace or Groq-hosted LLMs.
+CampConnect is a multi-tenant RAG (Retrieval-Augmented Generation) SaaS application designed for college campuses. It allows college staff members to upload documents (admission forms, fee structures, syllabus, rules, etc.) to build a shared FAISS vector store, enabling students to instantly query college information via an AI-powered chat interface.
 
-</div>
+---
 
-## 🧠 Overview
-This project implements a Retrieval-Augmented Generation (RAG) pipeline that lets you ask questions grounded in a curated PDF knowledge base (e.g., campus handbooks, course catalogs). Instead of hallucinating, the LLM is constrained by retrieved passages from a FAISS vector store built from your documents.
+## ✨ Features
 
-Two primary entry points:
-- `connect_memory_with_llm.py` – CLI prototype using a HuggingFace Inference endpoint (e.g. Mistral 7B Instruct).
-- `campconnect.py` – Streamlit chat UI using a Groq-hosted model (Llama 3.1) with retrieval.
+### 🏫 GPA Assistant (Special College Customization)
+Tailored integration for **Government Polytechnic Aurangabad** (GPA):
+- **Shared Staff Indexing**: All registered staff members share a single college client ID (`COLLEGE_CLIENT_ID` in `.env`). PDFs uploaded by any staff member are merged into one shared FAISS index.
+- **Student Chat Interface (`static/student.html`)**: A beautiful, full-screen dark-themed chat UI modeled after Claude.ai. Guest access (no login required) with recommended question chips, mobile responsiveness, and source document mapping.
+- **Public Query Endpoint**: `POST /api/query/public/{client_id}` provides guest RAG query access with rate limiting (**20 queries per IP per hour**) via `slowapi` to prevent abuse.
 
-## ✨ Key Features
-- FAISS vector store for fast semantic retrieval
-- SentenceTransformer embeddings (`all-MiniLM-L6-v2`) – switchable to remote API mode
-- Modular prompt template injection
-- Groq or HuggingFace LLM backends
-- Source document traceability (shows which chunks supported the answer)
-- Caching of vector store + embeddings via Streamlit resource cache
+### 🤖 Core RAG & Tech Stack
+- **FastAPI Backend**: High-performance asynchronous API endpoints.
+- **LangChain & Groq (Llama 3.1)**: State-of-the-art context-aware response generation.
+- **FAISS Vector Database**: Fast semantic local vector search.
+- **Sentence-Transformers (`all-MiniLM-L6-v2`)**: Local embeddings generation.
+- **MySQL Database**: Persistent storage for tenant clients, document uploads metadata, and query logging.
+- **JWT Authentication**: Secure endpoints protecting staff/admin document management operations.
 
-## 🏗 Architecture
+---
+
+## 🏗 Project Structure
+
 ```
-PDF(s) --> Text Splitter --> Embeddings --> FAISS Index (vectorstore/db_faiss)
-								│
-User Query --> Retriever (top-k) ---------------┘
-			    │
-		    Prompt Assembly
-			    │
-		    LLM Generation (HF or Groq)
-			    │
-		    Answer + Source Chunks
-```
-
-### Main Components
-| File | Role |
-|------|------|
-| `create_memory_for_llm.py` | Builds FAISS index from PDFs (embedding + persist) |
-| `connect_memory_with_llm.py` | CLI RAG query using HuggingFaceEndpoint |
-| `campconnect.py` | Streamlit chat interface using Groq Chat model + FAISS retrieval |
-| `vectorstore/db_faiss` | Persisted FAISS index (created beforehand) |
-| `data/` | PDF source documents |
-
-## 🔐 Environment Variables
-Create a `.env` file (or export in shell):
-```
-HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxxxxxx
-GROQ_API_KEY=groq_xxxxxxxxxxxxxxxxxxx
-```
-
-Optional (future expansion):
-```
-EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
-HUGGINGFACE_REPO_ID=mistralai/Mistral-7B-Instruct-v0.3
-```
-
-## ⚙️ Installation
-Use the provided `requirements.txt` or `pyproject.toml`.
-
-### 1. Create & Activate Virtual Environment
-```zsh
-python3 -m venv .venv
-source .venv/bin/activate
-```
-
-### 2. Install Dependencies
-```zsh
-pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-If using `uv`:
-```zsh
-uv sync
-```
-
-### 3. Set Environment Variables
-```zsh
-export HF_TOKEN=hf_...yourtoken...
-export GROQ_API_KEY=groq_...yourtoken...
-```
-Or create a `.env` file and rely on `dotenv` where enabled.
-
-## 🗂 Building the Vector Store
-If you have not yet created `vectorstore/db_faiss`, run the memory creation script (adjust name if different):
-```zsh
-python create_memory_for_llm.py
-```
-This should:
-1. Load PDFs from `data/`
-2. Chunk text
-3. Embed chunks using `HuggingFaceEmbeddings`
-4. Persist FAISS index under `vectorstore/db_faiss`
-
-If the file does not yet exist, implement a pipeline similar to:
-```python
-from langchain_community.document_loaders import PyPDFLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.vectorstores import FAISS
-
-loader = PyPDFLoader("data/syllabus.pdf")
-docs = loader.load()
-splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
-chunks = splitter.split_documents(docs)
-emb = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-db = FAISS.from_documents(chunks, emb)
-db.save_local("vectorstore/db_faiss")
-```
-
-## 💬 Running the CLI Version
-```zsh
-source .venv/bin/activate
-export HF_TOKEN=...  # if not in .env
-python connect_memory_with_llm.py
-```
-Enter a query at the prompt: `What is the syllabus for CS?`
-
-## 🖥 Running the Streamlit App
-```zsh
-source .venv/bin/activate
-export GROQ_API_KEY=groq_...  # if not in .env
-streamlit run campconnect.py
-```
-Open the URL shown (default: http://localhost:8501) and start chatting.
-
-## 🔄 Switching Embedding Modes
-`chatbot.py` includes:
-```python
-get_vectorstore()              # local model download
-get_vectorstore_hf_api(token)  # uses HuggingFace API
-```
-To switch:
-```python
-vectorstore = get_vectorstore_hf_api(os.environ["HF_TOKEN"])  # replace get_vectorstore()
-```
-Use this if your environment (e.g. limited disk) should call the HF Inference API instead of hosting the embedding model locally.
-
-## 🛠 Prompt Customization
-Modify `CUSTOM_PROMPT_TEMPLATE` in either script to adjust answer tone or style. Ensure variables `{context}` and `{question}` remain.
-
-## 🧪 Quick Sanity Test
-After building the vector store:
-```zsh
-python - <<'PY'
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.vectorstores import FAISS
-emb = HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')
-db = FAISS.load_local('vectorstore/db_faiss', emb, allow_dangerous_deserialization=True)
-print('Index loaded. k=2 sample:\n', db.similarity_search('What is the syllabus?', k=2))
-PY
-```
-
-## 🧾 Source Document Display
-Both scripts request `return_source_documents=True`. The final output enumerates the raw `Document` objects; you can pretty-print them by iterating and showing `doc.metadata` + a trimmed `doc.page_content`.
-
-Example enhancement snippet:
-```python
-for i, d in enumerate(source_documents, 1):
-    snippet = d.page_content[:300].replace('\n', ' ')
-    print(f"[Source {i}] {snippet}...")
-```
-
-## 🐛 Troubleshooting
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| `InferenceClient.text_generation() unexpected keyword 'token'` | Passing token in `model_kwargs` | Use `huggingfacehub_api_token` arg (already fixed) |
-| `FAISS.load_local ... file not found` | Vector store not built | Run memory creation script first |
-| Empty / irrelevant answers | Too small `k` or chunk size mismatch | Adjust `search_kwargs={'k':5}` or rebuild with better chunking |
-| Hallucinations | LLM ignoring context | Tighten prompt, lower temperature, reduce max tokens |
-| `HF_TOKEN not set` error | Missing env var | Export token or add to `.env` |
-| Virtualenv mismatch warning | Old `VIRTUAL_ENV` exported | `deactivate` then `source .venv/bin/activate` |
-
-## 🧱 Extending
-- Add multi-PDF ingestion (glob over `data/*.pdf`)
-- Enable streaming tokens in UI
-- Add OpenAI / Anthropic backend abstraction
-- Persist chat history with sources
-- Add evaluation harness (e.g. RAGAS) for answer faithfulness
-
-
-## 🏫 GPA Assistant (Special College Customization)
-We added custom support for **Government Polytechnic Aurangabad** (GPA) to allow shared document management and a public guest-access student chat portal:
-
-### 1. Shared Staff Indexing
-- Set `COLLEGE_CLIENT_ID` in your `.env` file to the fixed UUID of the college.
-- When configured, all staff members logging into the dashboard will automatically share this single college client ID.
-- Any PDF uploaded by any staff member is embedded into **one shared FAISS index** for the college.
-- Any staff member can view and delete these shared documents from the dashboard.
-
-### 2. Student Chat Portal (`static/student.html`)
-- A beautiful, full-screen dark mode interface designed like Claude.ai.
-- Guest access (no login required) for students to ask questions grounded in the college's shared knowledge base.
-- Shows source document tags (e.g., `Source: fee_structure.pdf`) below answers.
-- Features recommended preset questions at start and session-only history.
-
-### 3. Public Query Endpoint
-- `POST /api/query/public/{client_id}`
-- Allows querying the FAISS index without JWT authentication.
-- Rate-limited to **20 queries per IP per hour** (using `slowapi`) to prevent API abuse.
-- Configuration retrieval endpoint: `GET /api/config/college` allows the frontend to dynamically fetch the configured college client ID.
-
-
-## ✅ Minimal Usage Recap
-```zsh
-# 1. Build index locally (CLI demo)
-python create_memory_for_llm.py
-
-# 2. Run the main SaaS FastAPI Server
-python run.py
-
-# 3. Access Pages:
-# - Student Chat Page: http://localhost:8000/static/student.html
-# - Staff Admin Login: http://localhost:8000/static/login.html
-# - Swagger Docs: http://localhost:8000/docs
+├── app/
+│   ├── api/
+│   │   └── routes.py         # Main routes including public and staff APIs
+│   ├── auth/
+│   │   ├── dependencies.py   # JWT authentication validation
+│   │   ├── router.py         # Login and registration routes
+│   │   └── utils.py          # Password hashing and token generation
+│   ├── core/
+│   │   ├── embeddings.py     # SentenceTransformer embeddings caching
+│   │   ├── rag_pipeline.py   # LangChain RAG query execution logic
+│   │   └── vectorstore.py    # FAISS local vector store creation/management
+│   ├── config.py             # Configuration loader
+│   ├── database.py           # MySQL database configuration
+│   ├── models.py             # SQLAlchemy ORM models
+│   └── main.py               # FastAPI application entrypoint
+├── static/
+│   ├── css/                  # Styling assets
+│   ├── js/                   # Frontend dashboard & widget scripts
+│   ├── dashboard.html        # Staff admin document upload dashboard
+│   ├── login.html            # Staff/Admin login UI
+│   └── student.html          # Public-facing Student Chat Portal
+├── run.py                    # Main development server runner
+├── requirements.txt          # Python dependencies
+└── .env                      # Local environment configuration
 ```
 
 ---
-Questions or want enhancements? Open an issue or extend the scripts directly. Enjoy building with RAG! 🧪
 
+## ⚙️ Installation & Setup
+
+### 1. Clone & Set Up Environment
+Copy `.env.example` to `.env` and configure the settings:
+```bash
+cp .env.example .env
+```
+Inside `.env`, configure:
+- `GROQ_API_KEY`: Your Groq API key for Llama-3.1 generation.
+- `SECRET_KEY`: Long random string for JWT encryption.
+- `MYSQL_URL`: Connection string to your MySQL database.
+- `COLLEGE_CLIENT_ID`: A fixed UUID for the college client (e.g. `4a78c1ab-98db-4e12-b5fb-df98a9643d92`).
+
+### 2. Install Dependencies
+Create a virtual environment and install the required libraries:
+```bash
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+---
+
+## 🚀 Running the Application
+
+### 1. Start the Server
+Run the convenience script to start the FastAPI server:
+```bash
+python run.py
+```
+This automatically sets up all MySQL tables and seeds the default college client using the `COLLEGE_CLIENT_ID` defined in `.env`.
+
+### 2. Access Portals
+- **Student Chat Portal**: [http://localhost:8000/static/student.html](http://localhost:8000/static/student.html)
+- **Staff Admin Dashboard**: [http://localhost:8000/static/login.html](http://localhost:8000/static/login.html)
+- **Interactive API Documentation (Swagger)**: [http://localhost:8000/docs](http://localhost:8000/docs)
