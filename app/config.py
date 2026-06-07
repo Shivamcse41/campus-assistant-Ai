@@ -34,24 +34,33 @@ class Settings:
     MYSQL_URL: str = ""
 
     def __init__(self):
-        # Resolve MYSQL_URL dynamically
-        mysql_host = os.getenv("MYSQLHOST") or os.getenv("MYSQL_HOST")
-        mysql_port = os.getenv("MYSQLPORT") or os.getenv("MYSQL_PORT") or "3306"
-        mysql_user = os.getenv("MYSQLUSER") or os.getenv("MYSQL_USER")
-        mysql_pass = os.getenv("MYSQLPASSWORD") or os.getenv("MYSQL_PASSWORD")
-        mysql_db = os.getenv("MYSQLDATABASE") or os.getenv("MYSQL_DATABASE")
+        # 1. Check if SQLite is explicitly requested
+        use_sqlite = os.getenv("USE_SQLITE", "").lower() in ("true", "1", "yes")
 
-        if mysql_host and mysql_user and mysql_db:
-            # Construct from individual environment variables
-            self.MYSQL_URL = f"mysql+pymysql://{mysql_user}:{mysql_pass or ''}@{mysql_host}:{mysql_port}/{mysql_db}"
+        # 2. Get connection URLs first
+        url = os.getenv("MYSQL_URL") or os.getenv("DATABASE_URL")
+
+        if use_sqlite:
+            # Use SQLite database in the data directory
+            self.MYSQL_URL = "sqlite:///data/campconnect.db"
+        elif url:
+            # Prioritize complete connection URL if provided
+            if url.startswith("mysql://"):
+                url = url.replace("mysql://", "mysql+pymysql://", 1)
+            self.MYSQL_URL = url
         else:
-            url = os.getenv("MYSQL_URL") or os.getenv("DATABASE_URL")
-            if url:
-                if url.startswith("mysql://"):
-                    url = url.replace("mysql://", "mysql+pymysql://", 1)
-                self.MYSQL_URL = url
+            # 3. Fallback to individual variables if no complete URL is provided
+            mysql_host = os.getenv("MYSQLHOST") or os.getenv("MYSQL_HOST")
+            mysql_port = os.getenv("MYSQLPORT") or os.getenv("MYSQL_PORT") or "3306"
+            mysql_user = os.getenv("MYSQLUSER") or os.getenv("MYSQL_USER")
+            mysql_pass = os.getenv("MYSQLPASSWORD") or os.getenv("MYSQL_PASSWORD")
+            mysql_db = os.getenv("MYSQLDATABASE") or os.getenv("MYSQL_DATABASE")
+
+            if mysql_host and mysql_user and mysql_db:
+                self.MYSQL_URL = f"mysql+pymysql://{mysql_user}:{mysql_pass or ''}@{mysql_host}:{mysql_port}/{mysql_db}"
             else:
-                self.MYSQL_URL = "mysql+pymysql://root:password@localhost:3306/campconnect"
+                # 4. Default to SQLite instead of failing with MySQL connection error
+                self.MYSQL_URL = "sqlite:///data/campconnect.db"
 
     # ── JWT Auth (used in Task 2) ─────────────────────────────────────────────
     SECRET_KEY: str = os.getenv("SECRET_KEY", "change-this-in-production-please")

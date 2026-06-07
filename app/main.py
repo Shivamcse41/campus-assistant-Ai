@@ -155,8 +155,9 @@ def health_check():
 
 @app.get("/", tags=["Root"], summary="API root")
 def root():
-    """Redirect users to the login page."""
-    return RedirectResponse(url="/static/login.html")
+    """Redirect users to the student chat page."""
+    return RedirectResponse(url="/static/student.html")
+
 
 
 # Serve static files (HTML, CSS, JS) from the static/ directory

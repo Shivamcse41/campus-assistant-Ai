@@ -11,13 +11,21 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from app.config import settings
 
 # ── Engine ────────────────────────────────────────────────────────────────────
-# pool_pre_ping=True automatically reconnects on stale connections.
-# pool_recycle=3600 recycles connections every hour (recommended for MySQL).
+engine_args = {
+    "echo": False,
+}
+
+if settings.MYSQL_URL.startswith("sqlite"):
+    engine_args["connect_args"] = {"check_same_thread": False}
+else:
+    # pool_pre_ping=True automatically reconnects on stale connections.
+    # pool_recycle=3600 recycles connections every hour (recommended for MySQL).
+    engine_args["pool_pre_ping"] = True
+    engine_args["pool_recycle"] = 3600
+
 engine = create_engine(
     settings.MYSQL_URL,
-    pool_pre_ping=True,
-    pool_recycle=3600,
-    echo=False,  # Set to True to log all SQL queries (useful for debugging)
+    **engine_args
 )
 
 # ── Session Factory ───────────────────────────────────────────────────────────
